@@ -6,7 +6,7 @@ import collections
 import numpy
 
 NUMBER_OF_SUBPOPULATIONS = 10
-SUBPOPULATION_SIZE = 100
+SUBPOPULATION_SIZE = 1000
 ANCESTOR_FITNESS = 1
 ANCESTOR_MUTATION_RATE = 0.1
 MIGRATION_RATE = 0.001
@@ -26,7 +26,35 @@ class Metapopulation(object):
         self.subpopulations = subpopulations
 
     def migrate(self):
-        pass
+        """
+        Collects an equal number of migrants from every subpopulation,
+        then shuffles and returns the same number of random organisms back.
+        """
+        number_of_migrants = int(SUBPOPULATION_SIZE * MIGRATION_RATE)
+        migrants = []
+        for subpopulation in self.subpopulations:
+            migrants.extend(subpopulation.emigration(number_of_migrants))
+        random.shuffle(migrants)
+        for i, subpopulation in enumerate(self.subpopulations):
+            immigrant_subpopulation = migrants[i * number_of_migrants:
+                    (i + 1) * number_of_migrants]
+            subpopulation.immigration(immigrant_subpopulation)
+
+    def advance_generation(self):
+        for subpopulation in self.subpopulations:
+            subpopulation.select()
+            subpopulation.mutate()
+        self.migrate()
+
+    def __repr__(self):
+        return "{}".format(self.subpopulations)
+
+    def get_mean_fitness(self):
+        sum_fitnesses = sum(subpopulation.get_mean_fitness()
+                for subpopulation in self.subpopulations)
+        return sum_fitnesses / len(self.subpopulations)
+
+
 
 class Subpopulation(object):
     def __init__(self, organisms):
@@ -79,15 +107,29 @@ class Subpopulation(object):
 
     def emigration(self, number_of_organisms):
         """
-        Returns a list of random organisms removed from this population.
+        Returns an iterable of random organisms removed from this population.
         """
         emigrants = self._choose_organisms(number_of_organisms,
                 weighted_by_fitness=False)
         self.organisms -= emigrants
         return emigrants.elements()
 
+    def immigration(self, organisms):
+        """
+        Adds an iterable of organisms to this subpopulation.
+        """
+        immigrants = collections.Counter(organisms)
+        self.organisms += immigrants
+
     def __repr__(self):
         return repr(self.organisms.items())
+
+    def get_mean_fitness(self):
+        items = list(self.organisms.items())
+        fitnesses, abundances = zip(*self.organisms.items())
+        fitness_density = numpy.multiply(fitnesses, abundances)
+        return sum(fitness_density) / self.size
+
 
 def choose_weighted(number, values):
     """
@@ -102,10 +144,12 @@ def normalize(array):
 
 
 if __name__ == "__main__":
-    sub = Subpopulation([ANCESTOR_FITNESS] * 100)
-    sub.mutate()
-    sub.select()
-    print(sub)
-    print(list(sub.emigration(10)))
-    print(sub)
+    sub0 = Subpopulation([ANCESTOR_FITNESS] * 100)
+    sub1 = Subpopulation([ANCESTOR_FITNESS] * 100)
+    sub2 = Subpopulation([ANCESTOR_FITNESS] * 100)
+    sub3 = Subpopulation([9] * 100)
+    meta = Metapopulation([sub0, sub1, sub2, sub3])
+    meta.advance_generation()
+    print(meta)
+    print(meta.get_mean_fitness())
 
