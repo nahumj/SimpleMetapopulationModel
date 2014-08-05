@@ -91,27 +91,21 @@ class Subpopulation(object):
         then draws from that multinomial distribution to generate the next
         generation.
         """
-
-        self.organisms = self._choose_organisms(self.size,
-                weighted_by_fitness=True)
+        fitnesses, abundances = self._get_fitnesses_and_abundances()
+        probabilities = numpy.multiply(fitnesses, abundances)
+        children = choose_with_replacement(self.size,
+                probabilities)
+        self._set_fitnesses_and_abundances(fitnesses, children)
         # Remove mutant classes with zero abundances
         self.organisms += collections.Counter()
 
-    def _choose_organisms(self, number_of_organsims, weighted_by_fitness):
-        """
-        Selects organisms in proportion to their abundances (with optional
-        weighing by fitness). Returns a counter of organisms.
-        """
+    def _get_fitnesses_and_abundances(self):
         items = list(self.organisms.items())
-        fitnesses, abundances = zip(*self.organisms.items())
-        if weighted_by_fitness:
-            probabilities = numpy.multiply(fitnesses, abundances)
-        else:
-            probabilities = abundances
-        children = choose_weighted_with_replacement(number_of_organsims,
-                probabilities)
-        fitness_abundance_pairs = zip(fitnesses, children)
-        return collections.Counter(dict(fitness_abundance_pairs))
+        return zip(*self.organisms.items())
+
+    def _set_fitnesses_and_abundances(self, fitnesses, abundances):
+        fitness_abundance_pairs = zip(fitnesses, abundances)
+        self.organisms = collections.Counter(dict(fitness_abundance_pairs))
 
     def emigration(self, number_of_organisms):
         """
@@ -119,8 +113,10 @@ class Subpopulation(object):
         """
         emigrants = Subpopulation()
         emigrants.size = number_of_organisms
-        emigrants.organisms = self._choose_organisms(number_of_organisms,
-                weighted_by_fitness=False)
+        fitnesses, abundances = self._get_fitnesses_and_abundances()
+        new_abundances = choose_without_replacement(number_of_organisms,
+                abundances)
+        emigrants._set_fitnesses_and_abundances(fitnesses, new_abundances)
         self.organisms -= emigrants.organisms
         self.size -= emigrants.size
         return emigrants
@@ -141,7 +137,7 @@ class Subpopulation(object):
         fitness_density = numpy.multiply(fitnesses, abundances)
         return sum(fitness_density) / self.size
 
-def choose_weighted_with_replacement(number, values):
+def choose_with_replacement(number, values):
     """
     Chooses number of times weighted by the value array
     """
@@ -153,7 +149,6 @@ def choose_without_replacement(number, values):
     Given a number of draws and a vector of items in each category, returns
     the number of draws which landed in each category as a vector.
     """
-    return choose_weighted_with_replacement(number, values)
     total = sum(values)
     assert number <= total
 
@@ -169,20 +164,23 @@ def choose_without_replacement(number, values):
         organism_index = random.randrange(values[category_index])
         return category_index, organism_index
 
-    draw_locations = {}
+    draw_locations = set()
     while len(draw_locations) < number:
         location = choose_location()
         if location in draw_locations:
             continue
         draw_locations.add(location)
-    category_indices = zip(*draw_locations)[0]
-    print(category_indices)
-
+    category_indices = list(zip(*draw_locations))[0]
+    count_of_categories = collections.Counter(category_indices)
+    draws = [0] * len(values)
+    for category_index, abundance in count_of_categories.items():
+        draws[category_index] = abundance
+    return draws
 
 
 def normalize(array):
     """
-    Adjusts numpy array sum to 1
+    adjusts numpy array sum to 1
     """
     return array / numpy.sum(array)
 
@@ -192,4 +190,3 @@ if __name__ == "__main__":
     for i in range(50):
         meta.advance_generation()
         print(meta.get_mean_fitness())
-
