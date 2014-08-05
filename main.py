@@ -8,17 +8,18 @@ import numpy
 NUMBER_OF_SUBPOPULATIONS = 10
 SUBPOPULATION_SIZE = 1000
 ANCESTOR_FITNESS = 1
-ANCESTOR_MUTATION_RATE = 0.1
+ANCESTOR_MUTATION_RATE = 0.01
 MIGRATION_RATE = 0.001
 MUTANT_MEAN_FITNESS = 1
 
 def get_new_mutant_fitness():
     return random.expovariate(MUTANT_MEAN_FITNESS)
 
-def create_initial_population():
+def create_initial_metapopulation():
     subpopulations = []
     for i in range(NUMBER_OF_SUBPOPULATIONS):
-        subpopulations.append(Subpopulation(SUBPOPULATION_SIZE))
+        subpopulations.append(Subpopulation(
+            [ANCESTOR_FITNESS] * SUBPOPULATION_SIZE))
     return Metapopulation(subpopulations)
 
 class Metapopulation(object):
@@ -53,8 +54,6 @@ class Metapopulation(object):
         sum_fitnesses = sum(subpopulation.get_mean_fitness()
                 for subpopulation in self.subpopulations)
         return sum_fitnesses / len(self.subpopulations)
-
-
 
 class Subpopulation(object):
     def __init__(self, organisms):
@@ -130,7 +129,6 @@ class Subpopulation(object):
         fitness_density = numpy.multiply(fitnesses, abundances)
         return sum(fitness_density) / self.size
 
-
 def choose_weighted(number, values):
     """
     Chooses number of times weightes by the value array
@@ -144,11 +142,7 @@ def normalize(array):
 
 
 if __name__ == "__main__":
-    sub0 = Subpopulation([ANCESTOR_FITNESS] * 100)
-    sub1 = Subpopulation([ANCESTOR_FITNESS] * 100)
-    sub2 = Subpopulation([ANCESTOR_FITNESS] * 100)
-    sub3 = Subpopulation([9] * 100)
-    meta = Metapopulation([sub0, sub1, sub2, sub3])
+    meta = create_initial_metapopulation()
     meta.advance_generation()
     print(meta)
     print(meta.get_mean_fitness())
