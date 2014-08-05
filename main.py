@@ -30,6 +30,7 @@ class Metapopulation(object):
 
 class Subpopulation(object):
     def __init__(self, size):
+        self.size = size
         self.organisms = collections.Counter()
         self.organisms[ANCESTOR_FITNESS] = size
 
@@ -48,6 +49,32 @@ class Subpopulation(object):
             self.organisms[mutant_fitness] += 1
 
     def select(self):
+        """
+        Seperates the fitnesses from their abundance, then multiplies them,
+        then draws from that multinomial distribution to generate the next
+        generation.
+        """
+
+        def normalize(array):
+            "Adjusts numpy array sum to 1"
+            return array / numpy.sum(array)
+
+        items = list(self.organisms.items())
+        fitnesses, abundances = zip(*self.organisms.items())
+
+        probabilities = numpy.multiply(fitnesses, abundances)
+        numpy.set_printoptions(precision=8)
+        normalized_probabilities = normalize(probabilities)
+        children = numpy.random.multinomial(self.size,
+                normalized_probabilities)
+        fitness_abundance_pairs = zip(fitnesses, children)
+        self.organisms = collections.Counter(dict(fitness_abundance_pairs))
+        # Remove mutant classes with zero abundances
+        self.organisms += collections.Counter()
+
+    def emigration(self):
+        """
+        """
         pass
 
     def __repr__(self):
@@ -58,6 +85,10 @@ class Subpopulation(object):
 
 if __name__ == "__main__":
     sub = Subpopulation(1000)
-    print(sub)
     sub.mutate()
     print(sub)
+    print(len(sub.organisms))
+    sub.select()
+    print(sub)
+    print(len(sub.organisms))
+
