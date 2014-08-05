@@ -3,18 +3,23 @@ Main file
 """
 import random
 import collections
+import numpy
 
 NUMBER_OF_SUBPOPULATIONS = 10
 SUBPOPULATION_SIZE = 100
+ANCESTOR_FITNESS = 0.1
+ANCESTOR_MUTATION_RATE = 0.01
+MIGRATION_RATE = 0.001
+MUTANT_MEAN_FITNESS = 1
 
-def mutation_generator():
-    while True:
-        yield random.expovariate(1)
+def get_new_mutant_fitness():
+    return random.expovariate(MUTANT_MEAN_FITNESS)
 
 def create_initial_population():
-    metapopulation = []
+    subpopulations = []
     for i in range(NUMBER_OF_SUBPOPULATIONS):
-        subpopulation()
+        subpopulations.append(Subpopulation(SUBPOPULATION_SIZE))
+    return Metapopulation(subpopulations)
 
 class Metapopulation(object):
     def __init__(self, subpopulations):
@@ -24,12 +29,23 @@ class Metapopulation(object):
         pass
 
 class Subpopulation(object):
-    def __init__(self, ancestor, size):
+    def __init__(self, size):
         self.organisms = collections.Counter()
-        self.organisms[ancestor] = size
+        self.organisms[ANCESTOR_FITNESS] = size
 
     def mutate(self):
-        pass
+        """
+        Determines the number of ancestor to mutant mutations by drawing
+        from a binomial distribution. Then for each mutant determines its
+        new fitness and adjusts the Counter appropiately.
+        """
+        number_of_ancestors = self.organisms[ANCESTOR_FITNESS]
+        number_of_mutants = numpy.random.binomial(number_of_ancestors,
+                ANCESTOR_MUTATION_RATE)
+        for _ in range(number_of_mutants):
+            self.organisms[ANCESTOR_FITNESS] -= 1
+            mutant_fitness = get_new_mutant_fitness()
+            self.organisms[mutant_fitness] += 1
 
     def select(self):
         pass
@@ -41,5 +57,7 @@ class Subpopulation(object):
 
 
 if __name__ == "__main__":
-    sub = Subpopulation(0.4, 10)
+    sub = Subpopulation(1000)
+    print(sub)
+    sub.mutate()
     print(sub)
