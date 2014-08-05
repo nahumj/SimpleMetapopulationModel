@@ -7,8 +7,8 @@ import numpy
 
 NUMBER_OF_SUBPOPULATIONS = 10
 SUBPOPULATION_SIZE = 100
-ANCESTOR_FITNESS = 0.1
-ANCESTOR_MUTATION_RATE = 0.01
+ANCESTOR_FITNESS = 1
+ANCESTOR_MUTATION_RATE = 0.1
 MIGRATION_RATE = 0.001
 MUTANT_MEAN_FITNESS = 1
 
@@ -29,10 +29,12 @@ class Metapopulation(object):
         pass
 
 class Subpopulation(object):
-    def __init__(self, size):
-        self.size = size
-        self.organisms = collections.Counter()
-        self.organisms[ANCESTOR_FITNESS] = size
+    def __init__(self, organisms):
+        """
+        Creates a subpopulation from an iterable of organisms
+        """
+        self.size = len(organisms)
+        self.organisms = collections.Counter(organisms)
 
     def mutate(self):
         """
@@ -55,40 +57,55 @@ class Subpopulation(object):
         generation.
         """
 
-        def normalize(array):
-            "Adjusts numpy array sum to 1"
-            return array / numpy.sum(array)
-
-        items = list(self.organisms.items())
-        fitnesses, abundances = zip(*self.organisms.items())
-
-        probabilities = numpy.multiply(fitnesses, abundances)
-        numpy.set_printoptions(precision=8)
-        normalized_probabilities = normalize(probabilities)
-        children = numpy.random.multinomial(self.size,
-                normalized_probabilities)
-        fitness_abundance_pairs = zip(fitnesses, children)
-        self.organisms = collections.Counter(dict(fitness_abundance_pairs))
+        self.organisms = self._choose_organisms(self.size,
+                weighted_by_fitness=True)
         # Remove mutant classes with zero abundances
         self.organisms += collections.Counter()
 
-    def emigration(self):
+    def _choose_organisms(self, number_of_organsims, weighted_by_fitness):
         """
+        Selects organisms in proportion to their abundances (with optional
+        weighing by fitness)
         """
-        pass
+        items = list(self.organisms.items())
+        fitnesses, abundances = zip(*self.organisms.items())
+        if weighted_by_fitness:
+            probabilities = numpy.multiply(fitnesses, abundances)
+        else:
+            probabilities = abundances
+        children = choose_weighted(number_of_organsims, probabilities)
+        fitness_abundance_pairs = zip(fitnesses, children)
+        return collections.Counter(dict(fitness_abundance_pairs))
+
+    def emigration(self, number_of_organisms):
+        """
+        Returns a list of random organisms removed from this population.
+        """
+        emigrants = self._choose_organisms(number_of_organisms,
+                weighted_by_fitness=False)
+        self.organisms -= emigrants
+        return emigrants.elements()
 
     def __repr__(self):
         return repr(self.organisms.items())
 
+def choose_weighted(number, values):
+    """
+    Chooses number of times weightes by the value array
+    """
+    probabilities = normalize(values)
+    return numpy.random.multinomial(number, probabilities)
 
+def normalize(array):
+    "Adjusts numpy array sum to 1"
+    return array / numpy.sum(array)
 
 
 if __name__ == "__main__":
-    sub = Subpopulation(1000)
+    sub = Subpopulation([ANCESTOR_FITNESS] * 100)
     sub.mutate()
-    print(sub)
-    print(len(sub.organisms))
     sub.select()
     print(sub)
-    print(len(sub.organisms))
+    print(list(sub.emigration(10)))
+    print(sub)
 
