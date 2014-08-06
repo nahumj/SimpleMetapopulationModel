@@ -1,5 +1,5 @@
 """
-Main file
+Main file: Ben's version
 """
 import random
 import collections
