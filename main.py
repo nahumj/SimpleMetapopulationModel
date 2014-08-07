@@ -1,11 +1,11 @@
 """
-Main file: Ben's version
+Main file
 """
 import random
 import collections
 import numpy
 
-NUMBER_OF_SUBPOPULATIONS = 10
+NUMBER_OF_SUBPOPULATIONS = 1000
 SUBPOPULATION_SIZE = 1000
 ANCESTOR_FITNESS = 1
 ANCESTOR_MUTATION_RATE = 0.001
