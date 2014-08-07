@@ -10,10 +10,10 @@ SUBPOPULATION_SIZE = 1000
 ANCESTOR_FITNESS = 1
 ANCESTOR_MUTATION_RATE = 0.001
 MIGRATION_RATE = 0.001
-MUTANT_MEAN_FITNESS = 1
+MUTANT_MEAN_FITNESS_EFFECT = 1
 
 def get_new_mutant_fitness():
-    return random.expovariate(MUTANT_MEAN_FITNESS)
+    return ANCESTOR_FITNESS + random.expovariate(MUTANT_MEAN_FITNESS_EFFECT)
 
 def create_initial_metapopulation():
     subpopulations = []
