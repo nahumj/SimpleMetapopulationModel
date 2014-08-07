@@ -1,4 +1,4 @@
 SimpleMetapopulationModel
 =========================
 
-For a paper.
+For an exciting paper!
