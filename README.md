@@ -1,2 +1,4 @@
 SimpleMetapopulationModel
 =========================
+
+For a paper.
